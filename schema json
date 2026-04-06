@@ -1,0 +1,484 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/pseudo-structure-detection-v0.1.schema.json",
+  "title": "Pseudo Structure Detection Model v0.1 Schema",
+  "description": "JSON Schema for Pseudo Structure Detection Model v0.1.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["pseudo_structure_detection"],
+  "properties": {
+    "pseudo_structure_detection": {
+      "$ref": "#/$defs/PseudoStructureDetection"
+    }
+  },
+  "$defs": {
+    "Range01": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "SignedRange11": {
+      "type": "number",
+      "minimum": -1,
+      "maximum": 1
+    },
+    "NumberPair": {
+      "type": "array",
+      "prefixItems": [
+        { "type": "number" },
+        { "type": "number" }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "StringArray": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "NamedDescription": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "description"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "VariableDefRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "range", "meaning"],
+      "properties": {
+        "name": { "type": "string" },
+        "range": { "$ref": "#/$defs/NumberPair" },
+        "meaning": { "type": "string" }
+      }
+    },
+    "FormulaDef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["expression", "inputs", "output", "meaning"],
+      "properties": {
+        "expression": { "type": "string" },
+        "inputs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "output": { "type": "string" },
+        "meaning": { "type": "string" }
+      }
+    },
+    "ClassificationDef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "description"],
+      "properties": {
+        "id": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "EvaluationStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step", "name"],
+      "properties": {
+        "step": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "name": { "type": "string" },
+        "check": { "type": "string" },
+        "fail_action": { "type": "string" },
+        "pass_action": { "type": "string" },
+        "action": { "type": "string" }
+      }
+    },
+    "PrecedenceRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "priority", "condition", "action", "reason"],
+      "properties": {
+        "id": { "type": "string" },
+        "priority": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "condition": { "type": "string" },
+        "action": { "type": "string" },
+        "reason": { "type": "string" }
+      }
+    },
+    "DecisionRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["expression", "result"],
+      "properties": {
+        "expression": { "type": "string" },
+        "result": { "type": "string" }
+      }
+    },
+    "ActionDef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description"],
+      "properties": {
+        "description": { "type": "string" }
+      }
+    },
+    "ExplanationTemplate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["template", "required_fields"],
+      "properties": {
+        "template": { "type": "string" },
+        "required_fields": {
+          "$ref": "#/$defs/StringArray"
+        }
+      }
+    },
+    "ExampleCase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "inputs", "expectations"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "inputs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["S", "P", "T", "Cx", "L", "B", "I", "Z_tol", "D_ref", "Mx"],
+          "properties": {
+            "S": { "$ref": "#/$defs/Range01" },
+            "P": { "$ref": "#/$defs/Range01" },
+            "T": { "$ref": "#/$defs/Range01" },
+            "Cx": { "$ref": "#/$defs/Range01" },
+            "L": { "$ref": "#/$defs/Range01" },
+            "B": { "$ref": "#/$defs/Range01" },
+            "I": { "$ref": "#/$defs/Range01" },
+            "Z_tol": { "$ref": "#/$defs/SignedRange11" },
+            "D_ref": { "$ref": "#/$defs/Range01" },
+            "Mx": { "$ref": "#/$defs/Range01" }
+          }
+        },
+        "expectations": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["final_classification", "recommended_action", "reason"],
+          "properties": {
+            "final_classification": { "type": "string" },
+            "recommended_action": {
+              "type": "string",
+              "enum": ["protect", "tolerate", "hold", "audit", "reject"]
+            },
+            "reason": { "type": "string" }
+          }
+        }
+      }
+    },
+    "FutureExtension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "description"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "PseudoStructureDetection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "short_name",
+        "version",
+        "status",
+        "language",
+        "parent_system",
+        "related_models",
+        "purpose",
+        "design_principles",
+        "definition",
+        "variables",
+        "signals",
+        "formulas",
+        "thresholds",
+        "classifications",
+        "evaluation_pipeline",
+        "precedence_rules",
+        "decision_logic",
+        "outputs",
+        "actions",
+        "explanation_templates",
+        "example_cases",
+        "governance",
+        "implementation_notes",
+        "future_extensions"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "const": "pseudo-structure-detection-v0.1"
+        },
+        "title": {
+          "type": "string",
+          "const": "Pseudo Structure Detection Model v0.1"
+        },
+        "short_name": {
+          "type": "string",
+          "const": "PSDM v0.1"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^0\\.1\\.0$"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["draft-core"]
+        },
+        "language": {
+          "type": "string",
+          "enum": ["ja", "en"]
+        },
+        "parent_system": {
+          "type": "string"
+        },
+        "related_models": {
+          "$ref": "#/$defs/StringArray"
+        },
+        "purpose": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["summary", "objectives"],
+          "properties": {
+            "summary": { "type": "string" },
+            "objectives": {
+              "type": "array",
+              "items": { "type": "string" },
+              "minItems": 1
+            }
+          }
+        },
+        "design_principles": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/NamedDescription" },
+          "minItems": 1
+        },
+        "definition": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["pseudo_structure", "non_pseudo_examples", "warning"],
+          "properties": {
+            "pseudo_structure": { "type": "string" },
+            "non_pseudo_examples": {
+              "$ref": "#/$defs/StringArray"
+            },
+            "warning": {
+              "$ref": "#/$defs/StringArray"
+            }
+          }
+        },
+        "variables": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["core", "immune_support", "dependency_support"],
+          "properties": {
+            "core": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["S", "P", "T", "Cx", "L"],
+              "properties": {
+                "S": { "$ref": "#/$defs/VariableDefRange" },
+                "P": { "$ref": "#/$defs/VariableDefRange" },
+                "T": { "$ref": "#/$defs/VariableDefRange" },
+                "Cx": { "$ref": "#/$defs/VariableDefRange" },
+                "L": { "$ref": "#/$defs/VariableDefRange" }
+              }
+            },
+            "immune_support": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["B", "I", "Z_tol"],
+              "properties": {
+                "B": { "$ref": "#/$defs/VariableDefRange" },
+                "I": { "$ref": "#/$defs/VariableDefRange" },
+                "Z_tol": { "$ref": "#/$defs/VariableDefRange" }
+              }
+            },
+            "dependency_support": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["D_ref", "Mx"],
+              "properties": {
+                "D_ref": { "$ref": "#/$defs/VariableDefRange" },
+                "Mx": { "$ref": "#/$defs/VariableDefRange" }
+              }
+            }
+          }
+        },
+        "signals": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["suspicious_positive", "protective_negative"],
+          "properties": {
+            "suspicious_positive": {
+              "$ref": "#/$defs/StringArray"
+            },
+            "protective_negative": {
+              "$ref": "#/$defs/StringArray"
+            }
+          }
+        },
+        "formulas": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "pseudo_risk_score",
+            "dependency_penalty",
+            "adjusted_pseudo_risk",
+            "pseudo_confidence"
+          ],
+          "properties": {
+            "pseudo_risk_score": { "$ref": "#/$defs/FormulaDef" },
+            "dependency_penalty": { "$ref": "#/$defs/FormulaDef" },
+            "adjusted_pseudo_risk": { "$ref": "#/$defs/FormulaDef" },
+            "pseudo_confidence": { "$ref": "#/$defs/FormulaDef" }
+          }
+        },
+        "thresholds": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "candidate_threshold",
+            "hard_reject_threshold",
+            "audit_threshold",
+            "path_independence_max_for_reject",
+            "transformation_max_for_reject",
+            "context_divergence_max_for_reject",
+            "boundary_hold_trigger",
+            "inflammation_hold_trigger",
+            "dependency_penalty_trigger",
+            "tolerance_protection_floor"
+          ],
+          "properties": {
+            "candidate_threshold": { "$ref": "#/$defs/Range01" },
+            "hard_reject_threshold": { "$ref": "#/$defs/Range01" },
+            "audit_threshold": { "$ref": "#/$defs/Range01" },
+            "path_independence_max_for_reject": { "$ref": "#/$defs/Range01" },
+            "transformation_max_for_reject": { "$ref": "#/$defs/Range01" },
+            "context_divergence_max_for_reject": { "$ref": "#/$defs/Range01" },
+            "boundary_hold_trigger": { "$ref": "#/$defs/Range01" },
+            "inflammation_hold_trigger": { "$ref": "#/$defs/Range01" },
+            "dependency_penalty_trigger": { "$ref": "#/$defs/Range01" },
+            "tolerance_protection_floor": { "$ref": "#/$defs/Range01" }
+          }
+        },
+        "classifications": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ClassificationDef" },
+          "minItems": 1
+        },
+        "evaluation_pipeline": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/EvaluationStep" },
+          "minItems": 1
+        },
+        "precedence_rules": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PrecedenceRule" },
+          "minItems": 1
+        },
+        "decision_logic": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "candidate_rule",
+            "hard_reject_rule",
+            "audit_rule",
+            "safe_non_reject_rule"
+          ],
+          "properties": {
+            "candidate_rule": { "$ref": "#/$defs/DecisionRule" },
+            "hard_reject_rule": { "$ref": "#/$defs/DecisionRule" },
+            "audit_rule": { "$ref": "#/$defs/DecisionRule" },
+            "safe_non_reject_rule": { "$ref": "#/$defs/DecisionRule" }
+          }
+        },
+        "outputs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["primary", "secondary"],
+          "properties": {
+            "primary": { "$ref": "#/$defs/StringArray" },
+            "secondary": { "$ref": "#/$defs/StringArray" }
+          }
+        },
+        "actions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["protect", "tolerate", "hold", "audit", "reject"],
+          "properties": {
+            "protect": { "$ref": "#/$defs/ActionDef" },
+            "tolerate": { "$ref": "#/$defs/ActionDef" },
+            "hold": { "$ref": "#/$defs/ActionDef" },
+            "audit": { "$ref": "#/$defs/ActionDef" },
+            "reject": { "$ref": "#/$defs/ActionDef" }
+          }
+        },
+        "explanation_templates": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["reject", "hold", "audit", "protect"],
+          "properties": {
+            "reject": { "$ref": "#/$defs/ExplanationTemplate" },
+            "hold": { "$ref": "#/$defs/ExplanationTemplate" },
+            "audit": { "$ref": "#/$defs/ExplanationTemplate" },
+            "protect": { "$ref": "#/$defs/ExplanationTemplate" }
+          }
+        },
+        "example_cases": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ExampleCase" },
+          "minItems": 1
+        },
+        "governance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tuning_policy",
+            "review_cycle_days",
+            "review_metrics",
+            "adjustment_targets",
+            "prohibited_behaviors"
+          ],
+          "properties": {
+            "tuning_policy": { "type": "string" },
+            "review_cycle_days": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "review_metrics": {
+              "$ref": "#/$defs/StringArray"
+            },
+            "adjustment_targets": {
+              "$ref": "#/$defs/StringArray"
+            },
+            "prohibited_behaviors": {
+              "$ref": "#/$defs/StringArray"
+            }
+          }
+        },
+        "implementation_notes": {
+          "$ref": "#/$defs/StringArray"
+        },
+        "future_extensions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/FutureExtension" }
+        }
+      }
+    }
+  }
+}
