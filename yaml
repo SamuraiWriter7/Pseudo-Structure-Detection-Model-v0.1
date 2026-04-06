@@ -1,0 +1,468 @@
+pseudo_structure_detection:
+  id: "pseudo-structure-detection-v0.1"
+  title: "Pseudo Structure Detection Model v0.1"
+  short_name: "PSDM v0.1"
+  version: "0.1.0"
+  status: "draft-core"
+  language: "ja"
+  parent_system: "Immune Royalty OS v0.1"
+  related_models:
+    - "immune-royalty-os-v0.1"
+    - "tolerance-zone-v0.1"
+    - "decay-optimization-v0.1"
+
+  purpose:
+    summary: >
+      独立到達や同期的収束を誤爆せずに、
+      経路の短い擬似的新規構造のみを高精度で検出し、
+      reject / hold / audit を安全に分離するための防御実装モデル。
+    objectives:
+      - "擬似構造の最小定義を明確化する"
+      - "類似のみを理由とした誤排除を防ぐ"
+      - "Path・Transformation・Context を併用して判定する"
+      - "Boundary 混乱時は自動 reject を避ける"
+      - "explainable な reject / hold / audit 出力を生成する"
+
+  design_principles:
+    - id: "psd-dp-01"
+      name: "similarity_is_not_enough"
+      description: "類似度単独では擬似構造とみなさない"
+    - id: "psd-dp-02"
+      name: "protect_independent_arrival"
+      description: "独立到達や同期的収束を先に救う"
+    - id: "psd-dp-03"
+      name: "reject_is_narrow"
+      description: "自動 reject の条件は狭く厳格に定義する"
+    - id: "psd-dp-04"
+      name: "boundary_before_ban"
+      description: "自己/非自己境界が曖昧な場合は reject より hold / audit を優先する"
+    - id: "psd-dp-05"
+      name: "explainable_defense"
+      description: "排除・保留・監査の理由は常に説明可能でなければならない"
+
+  definition:
+    pseudo_structure: >
+      擬似構造とは、既存痕跡への依存が強く、
+      生成経路が短く、実質的変容が薄く、文脈独立性が乏しいため、
+      新規構造として保護する根拠が弱い構造を指す。
+    non_pseudo_examples:
+      - "独立した経路から偶然収束した構造"
+      - "十分な変容を伴う派生構造"
+      - "文脈と目的が大きく異なる再構成"
+    warning:
+      - "高い類似度だけでは擬似構造とはいえない"
+      - "reject は Tolerance Zone と Boundary 判定の後にのみ行う"
+
+  variables:
+    core:
+      S:
+        name: "Similarity Score"
+        range: [0.0, 1.0]
+        meaning: "構造類似度"
+      P:
+        name: "Path Independence Score"
+        range: [0.0, 1.0]
+        meaning: "生成経路の独立性"
+      T:
+        name: "Transformation Score"
+        range: [0.0, 1.0]
+        meaning: "実質的変容量"
+      Cx:
+        name: "Context Divergence Score"
+        range: [0.0, 1.0]
+        meaning: "文脈差分の大きさ"
+      L:
+        name: "Path Length Score"
+        range: [0.0, 1.0]
+        meaning: "経路の長さ・豊かさ"
+    immune_support:
+      B:
+        name: "Boundary Confusion Score"
+        range: [0.0, 1.0]
+        meaning: "自己/非自己境界の混乱度"
+      I:
+        name: "Inflammation Score"
+        range: [0.0, 1.0]
+        meaning: "過敏反応リスク"
+      Z_tol:
+        name: "Tolerance Score"
+        range: [-1.0, 1.0]
+        meaning: "Tolerance Zone における寛容スコア"
+    dependency_support:
+      D_ref:
+        name: "Direct Reference Dependency"
+        range: [0.0, 1.0]
+        meaning: "既存痕跡への直接依存度"
+      Mx:
+        name: "Mutation Density"
+        range: [0.0, 1.0]
+        meaning: "局所的変異密度"
+
+  signals:
+    suspicious_positive:
+      - "S is high"
+      - "P is low"
+      - "T is low"
+      - "Cx is low"
+      - "L is low"
+      - "D_ref is high"
+      - "Mx is low"
+    protective_negative:
+      - "P is high"
+      - "T is high"
+      - "Cx is high"
+      - "L is rich"
+      - "Z_tol is high"
+      - "direct dependency is weak"
+
+  formulas:
+    pseudo_risk_score:
+      expression: "R_pseudo = (0.30 * S) + (0.25 * (1 - P)) + (0.20 * (1 - T)) + (0.15 * (1 - Cx)) + (0.10 * (1 - L))"
+      inputs:
+        - "S"
+        - "P"
+        - "T"
+        - "Cx"
+        - "L"
+      output: "R_pseudo"
+      meaning: "擬似構造リスクの総合値"
+
+    dependency_penalty:
+      expression: "P_dep = (0.70 * D_ref) + (0.30 * (1 - Mx))"
+      inputs:
+        - "D_ref"
+        - "Mx"
+      output: "P_dep"
+      meaning: "直接依存と変異不足による加算圧"
+
+    adjusted_pseudo_risk:
+      expression: "R_adj = clamp(R_pseudo + (0.20 * P_dep) - (0.15 * max(0, Z_tol)), 0, 1)"
+      inputs:
+        - "R_pseudo"
+        - "P_dep"
+        - "Z_tol"
+      output: "R_adj"
+      meaning: "Tolerance 文脈を加味した最終擬似構造リスク"
+
+    pseudo_confidence:
+      expression: "C_pseudo = (0.50 * R_adj) + (0.25 * (1 - B)) + (0.25 * (1 - I))"
+      inputs:
+        - "R_adj"
+        - "B"
+        - "I"
+      output: "C_pseudo"
+      meaning: "境界混乱と炎症を差し引いた擬似構造確信度"
+
+  thresholds:
+    candidate_threshold: 0.62
+    hard_reject_threshold: 0.78
+    audit_threshold: 0.68
+    path_independence_max_for_reject: 0.35
+    transformation_max_for_reject: 0.25
+    context_divergence_max_for_reject: 0.30
+    boundary_hold_trigger: 0.50
+    inflammation_hold_trigger: 0.65
+    dependency_penalty_trigger: 0.60
+    tolerance_protection_floor: 0.40
+
+  classifications:
+    - id: "independent_arrival"
+      description: "独立経路による到達。擬似構造ではない"
+    - id: "tolerated_derivation"
+      description: "派生だが十分な変容があり許容される"
+    - id: "pseudo_candidate"
+      description: "擬似構造の候補"
+    - id: "hard_pseudo_structure"
+      description: "自動 reject 可能な擬似構造"
+    - id: "boundary_uncertain"
+      description: "境界が曖昧で要保留"
+    - id: "audit_required"
+      description: "高影響または高不確実性で監査が必要"
+
+  evaluation_pipeline:
+    - step: 1
+      name: "boundary_check"
+      check: "B >= boundary_hold_trigger OR I >= inflammation_hold_trigger"
+      fail_action: "continue"
+      pass_action: "route_to_hold_or_audit"
+    - step: 2
+      name: "tolerance_protection_check"
+      check: "Z_tol >= tolerance_protection_floor"
+      fail_action: "continue"
+      pass_action: "exclude_from_auto_reject"
+    - step: 3
+      name: "compute_pseudo_risk"
+      action: "calculate_R_pseudo"
+    - step: 4
+      name: "compute_dependency_penalty"
+      action: "calculate_P_dep"
+    - step: 5
+      name: "compute_adjusted_risk"
+      action: "calculate_R_adj"
+    - step: 6
+      name: "compute_pseudo_confidence"
+      action: "calculate_C_pseudo"
+    - step: 7
+      name: "candidate_assignment"
+      action: "assign_candidate_or_non_candidate"
+    - step: 8
+      name: "hard_reject_check"
+      action: "check_strict_reject_conditions"
+    - step: 9
+      name: "audit_routing"
+      action: "route_ambiguous_or_high_impact_cases"
+
+  precedence_rules:
+    - id: "psd-pr-01"
+      priority: 1
+      condition: "B >= 0.50"
+      action: "hold_for_boundary_review"
+      reason: "境界混乱時は自動 reject を禁止する"
+    - id: "psd-pr-02"
+      priority: 2
+      condition: "I >= 0.65"
+      action: "hold_due_to_inflammation"
+      reason: "炎症時は誤排除が増えやすい"
+    - id: "psd-pr-03"
+      priority: 3
+      condition: "Z_tol >= 0.40"
+      action: "protect_from_auto_reject"
+      reason: "寛容保護帯に入っている構造を先に救う"
+    - id: "psd-pr-04"
+      priority: 4
+      condition: "R_adj >= 0.62"
+      action: "classify_as_pseudo_candidate"
+      reason: "擬似構造候補として審査対象にする"
+    - id: "psd-pr-05"
+      priority: 5
+      condition: "R_adj >= 0.78 AND P < 0.35 AND T < 0.25 AND Cx < 0.30 AND B < 0.50"
+      action: "hard_reject"
+      reason: "厳格条件を満たす場合のみ自動 reject"
+    - id: "psd-pr-06"
+      priority: 6
+      condition: "R_adj >= 0.68 AND (B >= 0.35 OR I >= 0.40)"
+      action: "audit_required"
+      reason: "高リスクだが不確実性が残るため監査へ送る"
+
+  decision_logic:
+    candidate_rule:
+      expression: "R_adj >= candidate_threshold"
+      result: "pseudo_candidate"
+    hard_reject_rule:
+      expression: "R_adj >= hard_reject_threshold AND P < path_independence_max_for_reject AND T < transformation_max_for_reject AND Cx < context_divergence_max_for_reject AND B < boundary_hold_trigger"
+      result: "hard_pseudo_structure"
+    audit_rule:
+      expression: "R_adj >= audit_threshold AND (B >= 0.35 OR I >= 0.40)"
+      result: "audit_required"
+    safe_non_reject_rule:
+      expression: "Z_tol >= tolerance_protection_floor OR P >= 0.72 OR T >= 0.40"
+      result: "independent_arrival_or_tolerated_derivation"
+
+  outputs:
+    primary:
+      - "R_pseudo"
+      - "P_dep"
+      - "R_adj"
+      - "C_pseudo"
+      - "final_classification"
+      - "recommended_action"
+    secondary:
+      - "triggered_precedence_rules"
+      - "reject_condition_match"
+      - "audit_condition_match"
+      - "human_readable_reason"
+      - "top_explanatory_factors"
+
+  actions:
+    protect:
+      description: "独立到達または保護対象として扱う"
+    tolerate:
+      description: "派生として許容し、還元対象に含める"
+    hold:
+      description: "追加 trace review または境界確認に回す"
+    audit:
+      description: "高影響ケースとして人間監査に回す"
+    reject:
+      description: "擬似構造として自動 reject する"
+
+  explanation_templates:
+    reject:
+      template: >
+        Rejected as pseudo-structure because structural similarity is high,
+        path independence is low, transformation is insufficient,
+        context divergence is minimal, and boundary ambiguity is below the rejection threshold.
+      required_fields:
+        - "S"
+        - "P"
+        - "T"
+        - "Cx"
+        - "B"
+        - "R_adj"
+
+    hold:
+      template: >
+        Held for review because pseudo-structure risk is elevated,
+        but boundary ambiguity or inflammatory state prevents safe automatic rejection.
+      required_fields:
+        - "R_adj"
+        - "B"
+        - "I"
+
+    audit:
+      template: >
+        Routed to audit because pseudo-structure risk is high enough to require review,
+        while uncertainty remains too significant for safe automatic rejection.
+      required_fields:
+        - "R_adj"
+        - "B"
+        - "I"
+        - "impact_level"
+
+    protect:
+      template: >
+        Protected from pseudo-structure rejection because tolerance signals,
+        path independence, or transformation strength indicate non-trivial originality.
+      required_fields:
+        - "Z_tol"
+        - "P"
+        - "T"
+
+  example_cases:
+    - id: "psd-case-01"
+      name: "independent_convergence"
+      inputs:
+        S: 0.84
+        P: 0.81
+        T: 0.46
+        Cx: 0.58
+        L: 0.74
+        B: 0.18
+        I: 0.12
+        Z_tol: 0.57
+        D_ref: 0.10
+        Mx: 0.62
+      expectations:
+        final_classification: "independent_arrival"
+        recommended_action: "protect"
+        reason: "類似度は高いが独立経路と十分な変容がある"
+
+    - id: "psd-case-02"
+      name: "derivation_but_acceptable"
+      inputs:
+        S: 0.78
+        P: 0.54
+        T: 0.42
+        Cx: 0.44
+        L: 0.51
+        B: 0.20
+        I: 0.18
+        Z_tol: 0.43
+        D_ref: 0.38
+        Mx: 0.47
+      expectations:
+        final_classification: "tolerated_derivation"
+        recommended_action: "tolerate"
+        reason: "派生ではあるが変容と文脈差が十分"
+
+    - id: "psd-case-03"
+      name: "hard_pseudo_structure"
+      inputs:
+        S: 0.94
+        P: 0.18
+        T: 0.11
+        Cx: 0.14
+        L: 0.20
+        B: 0.16
+        I: 0.22
+        Z_tol: 0.08
+        D_ref: 0.88
+        Mx: 0.09
+      expectations:
+        final_classification: "hard_pseudo_structure"
+        recommended_action: "reject"
+        reason: "短経路・低変容・低文脈差・低境界混乱で厳格 reject 条件を満たす"
+
+    - id: "psd-case-04"
+      name: "high_risk_but_boundary_uncertain"
+      inputs:
+        S: 0.91
+        P: 0.24
+        T: 0.19
+        Cx: 0.21
+        L: 0.26
+        B: 0.57
+        I: 0.28
+        Z_tol: 0.17
+        D_ref: 0.79
+        Mx: 0.16
+      expectations:
+        final_classification: "boundary_uncertain"
+        recommended_action: "hold"
+        reason: "高リスクでも境界混乱が高いため自動 reject しない"
+
+    - id: "psd-case-05"
+      name: "audit_level_case"
+      inputs:
+        S: 0.89
+        P: 0.31
+        T: 0.24
+        Cx: 0.27
+        L: 0.33
+        B: 0.39
+        I: 0.43
+        Z_tol: 0.19
+        D_ref: 0.70
+        Mx: 0.19
+      expectations:
+        final_classification: "audit_required"
+        recommended_action: "audit"
+        reason: "高リスクだが境界と炎症の不確実性が残る"
+
+  governance:
+    tuning_policy: "human-supervised"
+    review_cycle_days: 30
+    review_metrics:
+      - "false_positive_rate"
+      - "false_negative_rate"
+      - "reject_precision"
+      - "hold_to_reject_conversion_rate"
+      - "audit_to_reject_conversion_rate"
+      - "independent_arrival_misclassification_rate"
+    adjustment_targets:
+      - "candidate_threshold"
+      - "hard_reject_threshold"
+      - "audit_threshold"
+      - "path_independence_max_for_reject"
+      - "transformation_max_for_reject"
+      - "context_divergence_max_for_reject"
+      - "boundary_hold_trigger"
+      - "inflammation_hold_trigger"
+      - "dependency_penalty_trigger"
+      - "tolerance_protection_floor"
+    prohibited_behaviors:
+      - "similarity_only_rejection"
+      - "automatic_reject_when_B_is_high"
+      - "reject_without_tolerance_check"
+      - "reject_without_explanation"
+      - "using_pseudo_detection_as_hidden_censorship"
+
+  implementation_notes:
+    - "v0.1 は最初の防御実装モデルであり、完全自動化前提ではない"
+    - "reject は狭く、hold / audit を広めに取る"
+    - "independent arrival を救うことを最優先にする"
+    - "Cx と L は簡易指標から始め、将来的に精緻化する"
+    - "高影響ケースでは必ず explanation と audit trail を残す"
+
+  future_extensions:
+    - id: "psd-ext-01"
+      name: "Domain-Specific Reject Profiles"
+      description: "分野ごとに reject 閾値と重みを切り替える"
+    - id: "psd-ext-02"
+      name: "Adaptive Context Divergence Modeling"
+      description: "文脈差分スコアを分野別・時系列別に適応調整する"
+    - id: "psd-ext-03"
+      name: "Multi-AI Pseudo Arbitration"
+      description: "複数AI間の擬似構造判定を裁定する"
+    - id: "psd-ext-04"
+      name: "Immune Map Binding"
+      description: "Immune Map 可視化レイヤーへ reject / hold / audit 経路を接続する"
