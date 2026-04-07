@@ -1,0 +1,124 @@
+name: Validate Specs
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install jsonschema
+
+      - name: Validate JSON Schema and sample JSON files
+        run: |
+          python <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          from jsonschema import Draft202012Validator, validate
+
+          ROOT = Path(".")
+
+          schema_dirs = [
+              ROOT / "schema json",
+              ROOT / "schemas",
+              ROOT / "schema_json",
+          ]
+
+          sample_dirs = [
+              ROOT / "sample json",
+              ROOT / "examples",
+              ROOT / "sample_json",
+          ]
+
+          def collect_files(dirs, pattern):
+              files = []
+              for d in dirs:
+                  if d.exists() and d.is_dir():
+                      files.extend(sorted(d.rglob(pattern)))
+              return files
+
+          schema_files = collect_files(schema_dirs, "*.schema.json")
+          sample_files = collect_files(sample_dirs, "*.sample.json")
+
+          if not schema_files:
+              print("ERROR: No schema files found.")
+              sys.exit(1)
+
+          if not sample_files:
+              print("ERROR: No sample JSON files found.")
+              sys.exit(1)
+
+          print("Schemas found:")
+          for f in schema_files:
+              print(f"  - {f}")
+
+          print("Samples found:")
+          for f in sample_files:
+              print(f"  - {f}")
+
+          schema_map = {}
+          for schema_file in schema_files:
+              key = schema_file.name.replace(".schema.json", "")
+              schema_map[key] = schema_file
+
+              try:
+                  with schema_file.open("r", encoding="utf-8") as sf:
+                      schema_data = json.load(sf)
+                  Draft202012Validator.check_schema(schema_data)
+                  print(f"✓ Schema syntax valid: {schema_file}")
+              except Exception as e:
+                  print(f"✗ Invalid schema: {schema_file}")
+                  print(e)
+                  sys.exit(1)
+
+          validated_count = 0
+
+          for sample_file in sample_files:
+              key = sample_file.name.replace(".sample.json", "")
+              schema_file = schema_map.get(key)
+
+              if schema_file is None:
+                  if len(schema_files) == 1:
+                      schema_file = schema_files[0]
+                      print(
+                          f"! No exact schema match for {sample_file.name}. "
+                          f"Using the only available schema: {schema_file.name}"
+                      )
+                  else:
+                      print(f"✗ No matching schema found for sample: {sample_file}")
+                      sys.exit(1)
+
+              try:
+                  with schema_file.open("r", encoding="utf-8") as sf:
+                      schema_data = json.load(sf)
+                  with sample_file.open("r", encoding="utf-8") as jf:
+                      sample_data = json.load(jf)
+
+                  validate(instance=sample_data, schema=schema_data)
+                  print(f"✓ Sample valid: {sample_file} -> {schema_file}")
+                  validated_count += 1
+
+              except Exception as e:
+                  print(f"✗ Validation failed: {sample_file} -> {schema_file}")
+                  print(e)
+                  sys.exit(1)
+
+          print(f"All validations passed. Total validated sample files: {validated_count}")
+          PY
