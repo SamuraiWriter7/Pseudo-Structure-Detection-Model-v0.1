@@ -553,3 +553,73 @@ Immune Map 可視化レイヤーに reject / hold / audit 経路を接続する�
 Pseudo Structure Detection Model v0.1 とは、
 独立創造を誤爆せずに守りながら、
 短経路・低変容・低文脈差の擬似的新規だけを狭く安全に検出するための防御実装モデルです。
+
+## Repository Structure
+
+This repository is organized as a specification-first model repository.
+
+### Root files
+
+- `README.md`  
+  Main human-readable overview of the project, including conceptual framing, purpose, and usage guidance.
+
+- `LICENSE`  
+  Repository license information.
+
+- `CHANGELOG.md`  
+  Version history and notable changes across releases.
+
+- `CITATION.cff`  
+  Citation metadata for referencing this repository in academic, technical, or documentation contexts.
+
+- `CONTRIBUTING.md`  
+  Contribution guidelines for documentation, schema, examples, and validation workflow updates.
+
+---
+
+### Documentation
+
+- `docs/one-page-spec.md`  
+  Compact one-page specification for PSDM v0.1.  
+  Intended for quick understanding, sharing, and lightweight reference.
+
+---
+
+### Model definition
+
+- `yaml/`  
+  YAML-based human-readable structured definition of the model.  
+  This is the conceptual configuration layer of PSDM v0.1.
+
+- `schema json/`  
+  JSON Schema files used to define machine-valid structure and validation rules.
+
+- `sample json/`  
+  Example JSON payloads that are expected to validate against the schema.
+
+---
+
+### Automation
+
+- `.github/workflows/validate-specs.yml`  
+  GitHub Actions workflow that validates schema files and sample JSON automatically on push, pull request, or manual run.
+
+---
+
+### Design philosophy of the structure
+
+The repository separates the project into four layers:
+
+1. **Explanation layer**  
+   Human-readable documents such as `README.md` and `docs/one-page-spec.md`
+
+2. **Definition layer**  
+   Structured model definitions in `yaml/`
+
+3. **Validation layer**  
+   Machine-checked schema definitions in `schema json/`
+
+4. **Example layer**  
+   Testable sample instances in `sample json/`
+
+This separation helps keep the project readable for humans, testable by machines, and extensible across future versions.
