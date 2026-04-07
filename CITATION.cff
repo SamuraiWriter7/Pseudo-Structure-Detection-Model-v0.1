@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use this repository, please cite it using the metadata below."
+title: "Pseudo Structure Detection Model v0.1"
+type: software
+version: "0.1.0"
+date-released: 2026-04-06
+repository-code: "https://github.com/SamuraiWriter7/Pseudo-Structure-Detection-Model-v0.1"
+url: "https://github.com/SamuraiWriter7/Pseudo-Structure-Detection-Model-v0.1"
+authors:
+  - family-names: "SamuraiWriter7"
+abstract: >
+  Pseudo Structure Detection Model v0.1 (PSDM v0.1) is a structured specification
+  for detecting outputs that appear coherent, sophisticated, or authoritative
+  while lacking sufficient grounding, traceability, operational clarity, or
+  evidential support. The repository provides a human-readable README, a YAML
+  model definition, a JSON Schema for validation, and sample JSON for testing.
+keywords:
+  - pseudo structure
+  - structure detection
+  - traceability
+  - ai governance
+  - schema validation
+  - detection model
+license: "SEE LICENSE IN LICENSE"
